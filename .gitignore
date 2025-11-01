@@ -1,0 +1,66 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+venv/
+env/
+ENV/
+.venv
+
+# Training data and models
+datasets/training_images/*.png
+datasets/training_images/*.jpg
+datasets/training_images/*.jpeg
+datasets/labels/*.json
+models/*.pkl
+models/*.pickle
+
+# Keep directory structure with .gitkeep
+!datasets/training_images/.gitkeep
+!datasets/labels/.gitkeep
+!models/.gitkeep
+
+# Godot
+.import/
+export.cfg
+export_presets.cfg
+.mono/
+data_*/
+*.translation
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp

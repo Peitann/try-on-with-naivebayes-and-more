@@ -1,0 +1,15 @@
+# Python dependencies for Try-On Filter application
+# Classical ML face tracking (no OpenCV, MediaPipe, or deep learning)
+
+# Core libraries
+numpy>=1.21.0
+pillow>=9.0.0
+
+# Machine Learning
+scikit-learn>=1.0.0
+
+# Webcam capture (alternative to OpenCV)
+pygame>=2.1.0
+
+# Data handling
+scipy>=1.7.0
