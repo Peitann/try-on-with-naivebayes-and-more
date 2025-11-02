@@ -1,0 +1,8 @@
+63f7b34db8d8cdea90c76aacccf841ec
+::res://::1762046829
+::res://scenes/::1761955491
+MainScene.tscn::PackedScene::-1::1761955491::0::1::::<><><>0<>0<><>::res://scripts/MainScene.gd<>res://scripts/FilterOverlay.gd<>res://scripts/CanvasEditor.gd
+::res://scripts/::1761955432
+CanvasEditor.gd::GDScript::132663571267025129::1761955432::0::1::::<>Control<><>0<>0<><>::
+FilterOverlay.gd::GDScript::1309639348331164165::1761955430::0::1::::<>Sprite2D<><>0<>0<><>::
+MainScene.gd::GDScript::3827180528095381833::1761955428::0::1::::<>Node2D<><>0<>0<><>::

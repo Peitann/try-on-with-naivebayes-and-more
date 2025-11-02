@@ -128,8 +128,31 @@ class FaceTracker:
         print("\nStarting face tracking...")
         print("Press Ctrl+C to stop")
         
+        # Prepare optional pygame display
+        use_pygame_display = False
+        screen = None
+        clock = None
+        if display:
+            try:
+                import pygame
+                pygame.init()
+
+                # Determine size from camera if available
+                if hasattr(self.camera, 'size'):
+                    win_w, win_h = self.camera.size
+                else:
+                    win_w, win_h = 640, 480
+
+                screen = pygame.display.set_mode((win_w, win_h))
+                pygame.display.set_caption('Face Tracker')
+                clock = pygame.time.Clock()
+                use_pygame_display = True
+            except Exception as e:
+                print(f"Pygame display not available: {e}. Falling back to PIL image.show()")
+
         try:
-            while True:
+            running = True
+            while running:
                 # Capture frame
                 frame = self.camera.read()
                 
@@ -151,9 +174,41 @@ class FaceTracker:
                     frame_count = 0
                     fps_start_time = time.time()
                 
-                # Display (optional)
+                # Display (optional) - prefer pygame for realtime display
                 if display:
-                    self._display_results(frame, skin_mask, bbox)
+                    if use_pygame_display and screen is not None:
+                        try:
+                            import pygame
+                            # Convert frame (H,W,3) to pygame surface
+                            surf = pygame.surfarray.make_surface(np.transpose(frame, (1, 0, 2)))
+                            screen.blit(surf, (0, 0))
+
+                            # Draw bounding box
+                            if bbox != (0, 0, 0, 0):
+                                x1, y1, x2, y2 = bbox
+                                rect = pygame.Rect(x1, y1, x2 - x1, y2 - y1)
+                                pygame.draw.rect(screen, (0, 255, 0), rect, 3)
+
+                            # Update display and handle events
+                            pygame.display.flip()
+
+                            # Handle events (allow closing window)
+                            for event in pygame.event.get():
+                                if event.type == pygame.QUIT:
+                                    running = False
+                                elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                                    running = False
+
+                            # Cap the frame rate slightly
+                            if clock is not None:
+                                clock.tick(60)
+                        except Exception as e:
+                            print(f"Realtime pygame display error: {e}")
+                            # Fallback to PIL display for a single frame
+                            self._display_results(frame, skin_mask, bbox)
+                    else:
+                        # Use PIL fallback (will open external viewer per frame)
+                        self._display_results(frame, skin_mask, bbox)
                 
                 # Check if max frames reached
                 if max_frames is not None and frame_count >= max_frames:
@@ -161,8 +216,16 @@ class FaceTracker:
         
         except KeyboardInterrupt:
             print("\nStopping...")
-        
+
         finally:
+            # Cleanup pygame if used
+            if use_pygame_display:
+                try:
+                    import pygame
+                    pygame.quit()
+                except Exception:
+                    pass
+
             self.camera.release()
             print("Camera released")
     
@@ -232,10 +295,10 @@ if __name__ == "__main__":
     try:
         # Create tracker
         tracker = FaceTracker(model_path, use_dummy_camera=use_dummy)
-        
-        # Run tracking
-        tracker.run(max_frames=None, display=False)
-    
+
+        # Run tracking with realtime display (pygame)
+        tracker.run(max_frames=None, display=True)
+
     except Exception as e:
         print(f"Error: {e}")
         import traceback

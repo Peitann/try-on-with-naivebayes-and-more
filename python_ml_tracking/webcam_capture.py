@@ -32,7 +32,13 @@ class WebcamCapture:
     
     def _init_camera(self):
         """Initialize camera using available method."""
-        # Try pygame first (most compatible)
+        # Try OpenCV first (best for DroidCam)
+        if self._init_opencv():
+            self.method = "opencv"
+            print(f"Using OpenCV for camera capture (camera index: {self.camera_index})")
+            return
+        
+        # Try pygame as fallback
         if self._init_pygame():
             self.method = "pygame"
             print("Using pygame for camera capture")
@@ -48,8 +54,41 @@ class WebcamCapture:
                 return
         
         print("Warning: No camera method available!")
-        print("Please install pygame: pip install pygame")
+        print("Please install OpenCV: pip install opencv-python")
+        print("Or pygame: pip install pygame")
         self.method = None
+    
+    def _init_opencv(self) -> bool:
+        """Initialize OpenCV camera (best for DroidCam)."""
+        try:
+            import cv2
+            
+            print(f"Trying to open camera index {self.camera_index}...")
+            self.camera = cv2.VideoCapture(self.camera_index)
+            
+            if not self.camera.isOpened():
+                print(f"Camera {self.camera_index} not available")
+                return False
+            
+            # Set resolution
+            self.camera.set(cv2.CAP_PROP_FRAME_WIDTH, self.size[0])
+            self.camera.set(cv2.CAP_PROP_FRAME_HEIGHT, self.size[1])
+            
+            # Test read
+            ret, frame = self.camera.read()
+            if not ret or frame is None:
+                print(f"Camera {self.camera_index} cannot read frames")
+                self.camera.release()
+                return False
+            
+            print(f"Camera {self.camera_index} initialized: {frame.shape[1]}x{frame.shape[0]}")
+            return True
+            
+        except ImportError:
+            return False
+        except Exception as e:
+            print(f"OpenCV camera initialization failed: {e}")
+            return False
     
     def _init_pygame(self) -> bool:
         """Initialize pygame camera."""
@@ -59,12 +98,30 @@ class WebcamCapture:
             
             cameras = pygame.camera.list_cameras()
             if not cameras:
+                print("No cameras found by pygame")
                 return False
             
-            self.camera = pygame.camera.Camera(cameras[self.camera_index], self.size)
+            print(f"Available cameras: {cameras}")
+            
+            # Check if camera_index is valid
+            if self.camera_index >= len(cameras):
+                print(f"Camera index {self.camera_index} not available")
+                print(f"Using camera 0 instead")
+                self.camera_index = 0
+            
+            camera_device = cameras[self.camera_index]
+            print(f"Opening camera: {camera_device}")
+            
+            self.camera = pygame.camera.Camera(camera_device, self.size)
             self.camera.start()
+            
+            # Wait a moment for camera to initialize
+            import time
+            time.sleep(0.5)
+            
             return True
-        except:
+        except Exception as e:
+            print(f"Pygame camera initialization failed: {e}")
             return False
     
     def _init_windows(self) -> bool:
@@ -80,11 +137,35 @@ class WebcamCapture:
         Returns:
             Frame as numpy array (H, W, 3) or None if capture failed
         """
-        if self.method == "pygame":
+        if self.method == "opencv":
+            return self._read_opencv()
+        elif self.method == "pygame":
             return self._read_pygame()
         elif self.method == "windows":
             return self._read_windows()
         else:
+            return None
+    
+    def _read_opencv(self) -> Optional[np.ndarray]:
+        """Read frame using OpenCV."""
+        try:
+            import cv2
+            
+            if self.camera is None:
+                return None
+            
+            ret, frame = self.camera.read()
+            
+            if not ret or frame is None:
+                return None
+            
+            # Convert BGR to RGB (OpenCV uses BGR by default)
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            
+            return frame
+            
+        except Exception as e:
+            print(f"Error reading OpenCV frame: {e}")
             return None
     
     def _read_pygame(self) -> Optional[np.ndarray]:
@@ -115,11 +196,14 @@ class WebcamCapture:
     
     def release(self):
         """Release camera resources."""
-        if self.method == "pygame" and self.camera is not None:
+        if self.camera is not None:
             try:
-                self.camera.stop()
-            except:
-                pass
+                if self.method == "opencv":
+                    self.camera.release()
+                elif self.method == "pygame":
+                    self.camera.stop()
+            except Exception as e:
+                print(f"Error releasing camera: {e}")
         
         self.camera = None
     
